@@ -2,52 +2,105 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Moto 3D na Praça</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Moto 3D - GitHub Preview</title>
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
+    <script src="https://raw.githack.com/fcor/arjs-gestures/master/dist/gestures.js"></script>
+    
+    <style>
+      .buttons {
+        position: absolute;
+        bottom: 20px;
+        left: 0; right: 0;
+        display: flex;
+        justify-content: center;
+        z-index: 999;
+      }
+      button {
+        padding: 12px 20px;
+        margin: 0 5px;
+        background: #ef2d5e;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-family: sans-serif;
+        font-weight: bold;
+      }
+    </style>
   </head>
 
   <body style="margin: 0; overflow: hidden;">
+    
+    <div class="buttons">
+      <button onclick="mudarCor()">TROCAR COR</button>
+      <button onclick="ligarFarol()">FAROL</button>
+    </div>
+
     <a-scene 
       embedded 
       arjs="sourceType: webcam; debugUIEnabled: false; videoTexture: true;" 
       vr-mode-ui="enabled: false" 
-      cursor="rayOrigin: mouse">
+      gesture-detector>
       
       <a-assets>
         <a-asset-item id="moto-modelo" src="moto3d.glb"></a-asset-item>
-        <audio id="som-moto" src="https://arjs-cors-proxy.herokuapp.com/https://www.myinstants.com/media/sounds/motorcycle-vroom.mp3" preload="auto"></audio>
+        <audio id="som-moto" src="https://www.myinstants.com/media/sounds/motorcycle-vroom.mp3" preload="auto"></audio>
       </a-assets>
 
       <a-entity 
         id="minha-moto"
         gltf-model="#moto-modelo" 
-        position="0 0 -2" 
-        scale="1 1 1"
-        animation-mixer
+        position="0 0 -5" 
+        scale="0.5 0.5 0.5"
+        class="clickable"
+        gesture-handler
         sound="src: #som-moto; on: click">
+        
+        <a-light id="luz-farol" type="spot" color="#fff" intensity="0" position="0 1 1" angle="45"></a-light>
       </a-entity>
 
-      <a-light type="ambient" intensity="1.5"></a-light>
-      <a-light type="directional" position="1 1 1" intensity="1"></a-light>
+      <a-light type="ambient" intensity="0.7"></a-light>
+      <a-light type="directional" position="1 2 1" intensity="1"></a-light>
 
-      <a-camera look-controls></a-camera>
+      <a-camera look-controls>
+        <a-entity cursor="rayOrigin: mouse" raycaster="objects: .clickable"></a-entity>
+      </a-camera>
     </a-scene>
 
     <script>
-      // Pequeno ajuste para o som funcionar no celular
       const moto = document.querySelector('#minha-moto');
-      const som = document.querySelector('#som-moto');
-      
+      const farol = document.querySelector('#luz-farol');
+      let farolLigado = false;
+
+      function mudarCor() {
+        // Isso tenta aplicar uma cor sobre o material do modelo 3D
+        // Nota: depende de como o modelo .glb foi exportado
+        const cores = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ffffff'];
+        const corAleatoria = cores[Math.floor(Math.random() * cores.length)];
+        moto.setAttribute('material', 'color', corAleatoria);
+        
+        // Se o modelo for composto por várias partes, usamos esse método:
+        moto.querySelectorAll('*').forEach(child => {
+          if(child.components && child.components.material) {
+             child.setAttribute('material', 'color', corAleatoria);
+          }
+        });
+      }
+
+      function ligarFarol() {
+        farolLigado = !farolLigado;
+        farol.setAttribute('intensity', farolLigado ? 5 : 0);
+      }
+
+      // Toque na moto para som e vibração
       moto.addEventListener('click', () => {
-        som.play();
-        // Faz a moto vibrar um pouquinho ao "ligar" com o clique
+        document.querySelector('#som-moto').play();
         moto.setAttribute('animation', {
           property: 'position',
-          to: '0 0.02 -2',
-          dur: 50,
+          to: '0 0.05 -5',
+          dur: 100,
           dir: 'alternate',
           loop: 4
         });
